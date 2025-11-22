@@ -1,6 +1,6 @@
 import json
-import requests
 import os
+import yt_dlp
 
 def load_videos(filename="tiktok.json"):
     with open(filename, "r", encoding="utf-8") as f:
@@ -10,14 +10,21 @@ def sort_by_views(videos, top_n=100):
     sorted_videos = sorted(videos, key=lambda x: x.get("views") or 0, reverse=True)
     return sorted_videos[:top_n]
 
-def download_video(video_url, save_path):
-    response = requests.get(video_url, stream=True)
-    if response.status_code == 200:
-        with open(save_path, "wb") as f:
-            for chunk in response.iter_content(chunk_size=8192):
-                f.write(chunk)
+def download_video(video_id, output_path):
+    video_url = f"https://www.tiktok.com/@placeholder/video/{video_id}"
+
+    ydl_opts = {
+        'outtmpl': output_path,
+        'quiet': True,
+        'no_warnings': True,
+    }
+
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ydl.download([video_url])
         return True
-    return False
+    except:
+        return False
 
 def download_top_videos(videos):
     os.makedirs("downloads", exist_ok=True)
@@ -29,18 +36,16 @@ def download_top_videos(videos):
 
         print(f"[{i}/{len(videos)}] Downloading video by {author} ({views:,} views)")
 
-        video_url = f"https://www.tiktok.com/@{author}/video/{video_id}"
-
-        filename = f"downloads/{i}_{video_id}.mp4"
+        output_path = f"downloads/{i}_{video_id}.mp4"
 
         try:
-            success = download_video(video_url, filename)
+            success = download_video(video_id, output_path)
             if success:
-                print(f"    Saved: {filename}")
+                print(f"Saved: {output_path}")
             else:
-                print(f"    Failed to download")
+                print(f"Failed to download")
         except Exception as e:
-            print(f"    Error: {e}")
+            print(f"Error: {e}")
 
 if __name__ == "__main__":
     videos = load_videos()
@@ -49,9 +54,22 @@ if __name__ == "__main__":
 
     top_100 = sort_by_views(videos, top_n=100)
 
-    print(f"\nTop 100 most viewed videos:")
     for i, v in enumerate(top_100[:10], 1):
         print(f"  {i}. {v.get('views', 0):,} views - {v.get('desc', '')[:50]}")
+
+    sorted_output = []
+    for v in top_100:
+        sorted_output.append({
+            "views": v.get("views", 0),
+            "description": v.get("desc", ""),
+            "author": v.get("author", ""),
+            "id": v.get("id", "")
+        })
+
+    with open("sorted_videos.json", "w", encoding="utf-8") as f:
+        json.dump(sorted_output, f, indent=4, ensure_ascii=False)
+
+    print(f"\nSaved sorted list to sorted_videos.json")
 
     proceed = input(f"\nDownload top {len(top_100)} videos? (y/n): ")
 
