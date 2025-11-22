@@ -18,4 +18,7 @@ python session.py
 python scraper.py
 ```
 
-You can change the limit of videos scraped in line 133.
+3. Run sort.py:
+```
+python sort.py
+```
