@@ -1,0 +1,7 @@
+.claude/
+downloads/
+session.json
+tiktok.json
+*.png
+*.pyc
+__pycache__/
